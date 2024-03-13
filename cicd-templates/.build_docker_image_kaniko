@@ -1,0 +1,44 @@
+.build_docker_image_kaniko:
+  rules:
+    - if: $CI_COMMIT_BRANCH
+      variables:
+        BUILD_VERSION: "$CI_COMMIT_REF_SLUG"
+      # when: manual
+    - if: $CI_COMMIT_TAG
+      variables:
+        BUILD_VERSION: "$CI_COMMIT_TAG"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      variables:
+        BUILD_VERSION: "$CI_COMMIT_REF_SLUG"
+    # - if: '$CI_COMMIT_BRANCH =~ /^release.*/ || $CI_COMMIT_TAG =~ /^v[0-9]+\.[0-9]+\.[0-9]+$/'
+    # - if: $CI_PIPELINE_SOURCE == "web"
+    # - when: always
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [ "" ]
+  variables:
+    DOCKER_DIR: "./"
+    DOCKERFILE: "./Dockerfile"
+    APP: ""
+  stage: build
+  before_script:
+    - mkdir -p /kaniko/.docker
+    - echo "{\"auths\":{\"${CI_REGISTRY}\":{\"auth\":\"$(printf "%s:%s" "${CI_REGISTRY_USER}" "${CI_REGISTRY_PASSWORD}" | base64 | tr -d '\n')\"}}}" > /kaniko/.docker/config.json
+  script:
+    - export datetag=$(date +%Y-%m-%d-%H-%M-%S)
+    # - export BUILD_VERSION=$($BUILD_VERSION | 's/[^[:alnum:]\.\_\-]/-/g')
+    - echo  $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
+    - cd $DOCKER_DIR
+    - /kaniko/executor
+      --cache=false
+      --cache-ttl 40h
+      --context "./"
+      --dockerfile "$DOCKERFILE"
+      --destination $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
+      --destination $CI_REGISTRY_IMAGE:$BUILD_VERSION
+      --destination $CI_REGISTRY_IMAGE:$BUILD_VERSION-sha-$CI_COMMIT_SHA
+      --destination $CI_REGISTRY_IMAGE:$BUILD_VERSION-date-$datetag
+      --insecure-pull
+      # --destination $CI_REGISTRY_IMAGE:latest
+  tags:
+    - k8s
