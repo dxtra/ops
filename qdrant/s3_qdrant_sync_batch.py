@@ -11,7 +11,6 @@ import io
 import tempfile
 
 
-# AWS S3 parameters
 s3_params = {
     'bucket': 'bucket',
     'access_key': 'access_key',
@@ -19,7 +18,6 @@ s3_params = {
     'aws_endpoint': "https://storage.net"
 }
 
-# S3 bucket name and directory
 bucket_name = 'bucket_name'
 prefix = 'bucket/path/to/csv'
 
@@ -31,11 +29,9 @@ s3_client = boto3.client(
     aws_secret_access_key=s3_params['secret_key']
 )
 
-# Qdrant client setup
 qdrant_client = QdrantClient(host="localhost", port=6333, timeout=300)
 
 
-# # Create collection in Qdrant
 collection_name = "collection"
 # collection_creation_payload = models.CreateCollection(
 #     collection_name=collection_name,
